@@ -100,11 +100,11 @@ class Node:
     def _moveEmptySquare(self, arr, direction):
         rowIndex, colIndex = self._emptySquareCoords()
         if direction == 0: #Up
-            self._swapSquares(arr, rowIndex, colIndex, rowIndex+1, colIndex)
+            self._swapSquares(arr, rowIndex, colIndex, rowIndex-1, colIndex)
         elif direction == 1: #Right
             self._swapSquares(arr, rowIndex, colIndex, rowIndex, colIndex+1)
         elif direction == 2: #Down
-            self._swapSquares(arr, rowIndex, colIndex, rowIndex-1, colIndex)
+            self._swapSquares(arr, rowIndex, colIndex, rowIndex+1, colIndex)
         elif direction == 3: #Left
             self._swapSquares(arr, rowIndex, colIndex, rowIndex, colIndex-1)
         else:
