@@ -22,6 +22,7 @@ class Node:
         self.heuristicType = heuristicType
         self.fn = self._calculateFn(heuristicType)
 
+    #FIXME/WARN: Only works if goal state has all the numbers ascending from left to right, top to bottom, with 0 at the end. Change if other goal states are wanted
     def _getMisplacedTileCount(self, arr):
         heuristic = (len(arr) * len(arr[0])) - 1 # (RowCount * ColCount) - 1 or Num tiles excluding 0
         idealValue = 1
@@ -117,8 +118,9 @@ class Node:
         #Generate child nodes of each possible state (max 4, min 2) that can derive from parent.
         while i < 4:
             if self._tryDirection(i):
-                newState = self._moveEmptySquare(self.state, i)
-                child = Node(child, newState, self.depth + 1, self.heuristicType)
+                newState = self.state
+                self._moveEmptySquare(newState, i)
+                child = Node(newState, self.depth + 1, self.heuristicType)
                 children.append(child)
             i += 1
         
