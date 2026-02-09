@@ -8,7 +8,7 @@ def display2DArray(arr):
 def distanceBetween(rowIndex1, colIndex1, rowIndex2, colIndex2): #Moved as a helper function in Node Class for Manhattan Distance calc function to use
     return abs(rowIndex1 - rowIndex2) + abs(colIndex1 - colIndex2)
 
-
+# parent node of child (set to None for Root node)
 # state is a 2D array: [[ 1,  2,  3 ],
                     #   [ 4,  5,  6 ],
                     #   [ 7,  8,  0 ]]
@@ -16,7 +16,8 @@ def distanceBetween(rowIndex1, colIndex1, rowIndex2, colIndex2): #Moved as a hel
 # fn = depth (gn) + heuristic (hn)
 # herusticType: 0 - Misplaced Tile, 1 - Manhattan Distance, Other - None
 class Node:
-    def __init__(self, state, depth, heuristicType):
+    def __init__(self, parent, state, depth, heuristicType):
+        self.parent = parent
         self.state = state
         self.depth = depth
         self.heuristicType = heuristicType
@@ -120,7 +121,7 @@ class Node:
             if self._tryDirection(i):
                 newState = self.state
                 self._moveEmptySquare(newState, i)
-                child = Node(newState, self.depth + 1, self.heuristicType)
+                child = Node(newState, self, self.depth + 1, self.heuristicType)
                 children.append(child)
             i += 1
         
