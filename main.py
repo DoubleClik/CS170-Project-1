@@ -64,6 +64,19 @@ def getManhattanDistance(arr):
 
     return heuristic
 
+#FIXME: Hardcoded to 3 by 3, find a way to dynamically give provide goalState coords
+def getMisplacedTileCount(arr):
+    heuristic = 0
+    i = 8
+
+    for rowIndex, rowArr in enumerate(arr):
+        for colIndex, colVal in enumerate(rowArr):
+            if( colVal != 0 and colVal == i ):
+                heuristic += 1
+            i - 1
+
+    return heuristic
+
 # ----- Main -----
 if __name__ == '__main__':
     arr = ([[0, 7, 2],
