@@ -1,20 +1,15 @@
 import heapq
 
-# ----- Some Random Leftover Helper Functions that I Might Want to Use Later, Delete Later if not -----
+# ----- Helper Functions -----
 def display2DArray(arr):
     for row in arr:
         print(row)
 
-def distanceBetween(rowIndex1, colIndex1, rowIndex2, colIndex2): #Moved as a helper function in Node Class for Manhattan Distance calc function to use
-    return abs(rowIndex1 - rowIndex2) + abs(colIndex1 - colIndex2)
+# Returns hashable key for states already visited
+def stateKey(state):
+    return tuple(tuple(row) for row in state)
 
 # ----- Node Class -----
-# parent node of child (set to None for Root node)
-# state is a 2D array: [[ 1,  2,  3 ],
-                    #   [ 4,  5,  6 ],
-                    #   [ 7,  8,  0 ]]
-# depth is how the number of moves needed to reach this node
-# fn = depth (gn) + heuristic (hn)
 # herusticType: 0 - Misplaced Tile, 1 - Manhattan Distance, Other - None
 class Node:
     def __init__(self, parent, state, depth, heuristicType, goalState):
@@ -142,7 +137,95 @@ class Problem:
     def GOAL_TEST(self, state):
         return state == self.GOAL_STATE
 
+# ----- Queue Helpers -----
+def MAKE_QUEUE(rootNode):
+    nodes = []
+    tie = 0
+    heapq.heappush(nodes, (rootNode.fn, tie, rootNode))
+    return nodes, tie
 
+def EMPTY(nodes):
+    return len(nodes) == 0
+
+def REMOVE_FRONT(nodes):
+    return heapq.heappop(nodes)[2]
+
+# QUEUEING_FUNCTION: insert newNodes into heap
+def QUEUEING_FUNCTION(nodes, tieCounter, newNodes):
+    for n in newNodes:
+        tieCounter += 1
+        heapq.heappush(nodes, (n.fn, tieCounter, n))
+    return nodes, tieCounter
+
+# ----- General Search Algorithm -----
+def general_search(problem, heuristicType):
+    # nodes = MAKE-QUEUE(MAKE-NODE(problem.INITIAL-STATE))
+    root = Node(None, problem.INITIAL_STATE, 0, heuristicType, problem.GOAL_STATE)
+    nodes, tieCounter = MAKE_QUEUE(root)
+
+    visited = set()  # avoid re-expanding previously explored states
+
+    # loop do
+    while True:
+        # if EMPTY(nodes) then return "failure"
+        if EMPTY(nodes):
+            return None
+        
+        # node = REMOVE-FRONT(nodes)
+        node = REMOVE_FRONT(nodes)
+
+        # if problem.GOAL-TEST(node.STATE) succeeds then return node
+        if problem.GOAL_TEST(node.state):
+            return node
+
+        k = stateKey(node.state)
+        if k in visited:
+            continue
+        visited.add(k)
+
+        # nodes = QUEUEING-FUNCTION(nodes, EXPAND(node, problem.OPERATORS))
+        children = node.generateChildren()
+        nodes, tieCounter = QUEUEING_FUNCTION(nodes, tieCounter, children)
+
+# ----- Path reconstruction -----
+def reconstructPath(goalNode):
+    path = []
+    currentNode = goalNode
+    while currentNode is not None:
+        path.append(currentNode.state)
+        currentNode = currentNode.parent
+    return list(reversed(path))
+
+
+#FIXME: Needs better result display, initial and goal state inputs, validation for those inputs, timers and comparisons (maybe multiple trials, averages, ect. make it experimental kind of), bugfix anything ig, improve code readibility, write report, check code and report at office hours
 # ----- Main -----
 if __name__ == '__main__':
+    #FIXME: Enter Initial State Function (Hardcoded for now)
+    initArr = ([[0, 7, 2],
+                [4, 6, 1],
+                [3, 5, 8,]])
+        
+    #FIXME: Enter Goal State Function (Hardcoded for now)
+    goalArr = ([[1, 2, 3],
+                [4, 5, 6],
+                [7, 8, 0,]])
     
+    problem = Problem(initArr, goalArr)
+    
+    # 1) Uniform Cost Search
+    # goalNode = general_search(problem, heuristicType=-1)
+
+    # 2) A* Misplaced
+    # goalNode = general_search(problem, heuristicType=0)
+
+    # 3) A* Manhattan
+    goalNode = general_search(problem, heuristicType=1)
+
+    if goalNode is None:
+        print("failure")
+    else:
+        path = reconstructPath(goalNode)
+        for s in path:
+            display2DArray(s)
+            print()
+        print(f"Solved in {len(path)-1} moves")
