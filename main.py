@@ -48,7 +48,7 @@ def generateGoalState(n):
         return None
 
     goal = []
-    value = n*n-1
+    value = 1
 
     for rowIndex in range(n):
         row = []
@@ -57,7 +57,7 @@ def generateGoalState(n):
                 row.append(0)
             else:
                 row.append(value)
-                value -= 1
+                value += 1
         goal.append(tuple(row))
 
     return tuple(goal)
@@ -314,4 +314,4 @@ if __name__ == '__main__':
             time.sleep(.5)
         print(f"Solved in {len(path)-1} moves")
 
-    print("Search took", length * 1000 * 1000, "microseconds")
+    print("Search took", length * 1000, "ms")
