@@ -1,4 +1,5 @@
 import heapq
+import time
 
 # ----- Helper Functions -----
 def display2DArray(arr):
@@ -6,15 +7,16 @@ def display2DArray(arr):
         print(row)
 
 # Returns hashable key for states already visited
+# NOTE: State is stored as tuple-of-tuples
 def stateKey(state):
-    return tuple(tuple(row) for row in state)
+    return state
 
 # ----- Node Class -----
 # herusticType: 0 - Misplaced Tile, 1 - Manhattan Distance, Other - None
 class Node:
     def __init__(self, parent, state, depth, heuristicType, goalState):
         self.parent = parent
-        self.state = state
+        self.state = state # Tuple-of-tuples
         self.depth = depth
         self.heuristicType = heuristicType
         self.goalState = goalState
@@ -64,7 +66,7 @@ class Node:
     def _emptySquareCoords(self, state=None):
         if state is None:
             state = self.state
-        for rowIndex, rowArr in enumerate(self.state):
+        for rowIndex, rowArr in enumerate(state):
             for colIndex, colVal in enumerate(rowArr):
                 if colVal == 0:
                     return rowIndex, colIndex
@@ -92,11 +94,11 @@ class Node:
         arr[rowIndex2][colIndex2] = saveNum
     
     # Helper function to move empty square in a chosen direction (0 - Up, 1 - Right, 2 - Down, 3 - Left)
-    # Returns a new Array/State
     # ONLY USE AFTER HAVING CALLED _tryDirection
+    # NOTE: arr is expected to be passed in as tuple-of-tuples; converted to mutable, then back to tuple-of-tuples at end to be returned
     def _moveEmptySquare(self, arr, direction):
-        newArr = [row[:] for row in arr]
-        rowIndex, colIndex = self._emptySquareCoords()
+        newArr = [list(row) for row in arr]
+        rowIndex, colIndex = self._emptySquareCoords(newArr)
 
         if direction == 0: #Up
             self._swapSquares(newArr, rowIndex, colIndex, rowIndex-1, colIndex)
@@ -108,7 +110,8 @@ class Node:
             self._swapSquares(newArr, rowIndex, colIndex, rowIndex, colIndex-1)
         else:
             raise ValueError("direction must be 0..3")
-        return newArr
+
+        return tuple(tuple(row) for row in newArr)
 
     #Try moving node in each direction, return array of possible children
     def generateChildren(self):
@@ -200,17 +203,21 @@ def reconstructPath(goalNode):
 #FIXME: Needs better result display, initial and goal state inputs, validation for those inputs, timers and comparisons (maybe multiple trials, averages, ect. make it experimental kind of), bugfix anything ig, improve code readibility, write report, check code and report at office hours
 # ----- Main -----
 if __name__ == '__main__':
-    #FIXME: Enter Initial State Function (Hardcoded for now)
-    initArr = ([[0, 7, 2],
-                [4, 6, 1],
-                [3, 5, 8,]])
-        
-    #FIXME: Enter Goal State Function (Hardcoded for now)
-    goalArr = ([[1, 2, 3],
-                [4, 5, 6],
-                [7, 8, 0,]])
+    # IMPORTANT: Use tuple-of-tuples so goal test + visited set work reliably
+
+    initArr = ((15, 14, 13, 12),
+               (11, 10, 9, 8),
+               (7, 6, 5, 4),
+               (3, 2, 0, 1))
+    
+    goalArr = ((15, 14, 13, 12),
+               (11, 10, 9, 8),
+               (7, 6, 5, 4),
+               (3, 2, 1, 0))
     
     problem = Problem(initArr, goalArr)
+
+    start = time.time()
     
     # 1) Uniform Cost Search
     # goalNode = general_search(problem, heuristicType=-1)
@@ -221,6 +228,10 @@ if __name__ == '__main__':
     # 3) A* Manhattan
     goalNode = general_search(problem, heuristicType=1)
 
+    # Calculate the end time and time taken
+    end = time.time()
+    length = end - start
+
     if goalNode is None:
         print("failure")
     else:
@@ -229,3 +240,5 @@ if __name__ == '__main__':
             display2DArray(s)
             print()
         print(f"Solved in {len(path)-1} moves")
+
+    print("Search took", length * 1000 * 1000, "microseconds")
