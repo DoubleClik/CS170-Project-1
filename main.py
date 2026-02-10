@@ -312,6 +312,5 @@ if __name__ == '__main__':
             print(f'Depth: {i}')
             i+=1
             time.sleep(.5)
-        print(f"Solved in {len(path)-1} moves")
 
     print("Search took", length * 1000, "ms")
