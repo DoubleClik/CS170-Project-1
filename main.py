@@ -2,9 +2,65 @@ import heapq
 import time
 
 # ----- Helper Functions -----
-def display2DArray(arr):
-    for row in arr:
-        print(row)
+def printLargeGap():
+    for _ in range(50):
+        print()
+
+def printBar(barLength):
+    output = ""
+    for _ in range(barLength):
+        output += "-"
+    print(output)
+
+def formatNumAndSpace(num, longestNumLen):
+    numSpaces = longestNumLen - len(str(num))
+    output = ""
+
+    for _ in range(numSpaces):
+        output += " "
+
+    output += str(num)
+    return output
+
+def printGrid(state, barLength, n, longestNumLen):
+    for row in state:
+        printBar(barLength)
+        output = "|"
+        for i in range(0,n):
+            if row[i] is None:
+                for i in range(longestNumLen):
+                    output += " "
+            else:
+                output += formatNumAndSpace(row[i], longestNumLen)
+            output += "|"
+        print(output)
+    printBar(barLength)
+
+def displayState(state):
+    longestNumLen = len(str(state[0][0]))
+    n = len(state)
+    barLength = (n+1) + (longestNumLen*n)
+
+    printGrid(state, barLength, n, longestNumLen)
+
+def generateGoalState(n):
+    if n <= 1:
+        return None
+
+    goal = []
+    value = n*n-1
+
+    for rowIndex in range(n):
+        row = []
+        for colIndex in range(n):
+            if rowIndex == n - 1 and colIndex == n - 1:
+                row.append(0)
+            else:
+                row.append(value)
+                value -= 1
+        goal.append(tuple(row))
+
+    return tuple(goal)
 
 # Returns hashable key for states already visited
 # NOTE: State is stored as tuple-of-tuples
@@ -199,22 +255,35 @@ def reconstructPath(goalNode):
         currentNode = currentNode.parent
     return list(reversed(path))
 
+# ----- User Prompter -----
 
-#FIXME: Needs better result display, initial and goal state inputs, validation for those inputs, timers and comparisons (maybe multiple trials, averages, ect. make it experimental kind of), bugfix anything ig, improve code readibility, write report, check code and report at office hours
+
+def promptUser():
+    n = input("Enter Puzzle Dimensions [n by n]. n: ")
+
+    n = int(n)
+    longestNumLen = len(str(n*n-1))
+    barLength = (n+1) + (longestNumLen*n)
+    arr = [[None for _ in range(n)] for _ in range(n)]
+
+    for rowIndex in range(0,n):
+        for colIndex in range(0,n):
+                printGrid(arr, barLength, n, longestNumLen)
+                value = input(f'Enter Value for Row {rowIndex+1}, Column {colIndex+1}: ')
+                arr[rowIndex][colIndex] = int(value)
+                printLargeGap()
+    
+    initArr = tuple(tuple(row) for row in arr)
+    goalArr = generateGoalState(n)
+
+    return initArr, goalArr
+
+#FIXME: promptUser() input validation, innitArr input validation, improve code readibility, write report, check code and report at office hours
 # ----- Main -----
 if __name__ == '__main__':
-    # IMPORTANT: Use tuple-of-tuples so goal test + visited set work reliably
 
-    initArr = ((15, 14, 13, 12),
-               (11, 10, 9, 8),
-               (7, 6, 5, 4),
-               (3, 2, 0, 1))
-    
-    goalArr = ((15, 14, 13, 12),
-               (11, 10, 9, 8),
-               (7, 6, 5, 4),
-               (3, 2, 1, 0))
-    
+    initArr, goalArr = promptUser()
+  
     problem = Problem(initArr, goalArr)
 
     start = time.time()
@@ -236,9 +305,13 @@ if __name__ == '__main__':
         print("failure")
     else:
         path = reconstructPath(goalNode)
+        i = 0
         for s in path:
-            display2DArray(s)
-            print()
+            printLargeGap()
+            displayState(s)
+            print(f'Depth: {i}')
+            i+=1
+            time.sleep(.5)
         print(f"Solved in {len(path)-1} moves")
 
     print("Search took", length * 1000 * 1000, "microseconds")
