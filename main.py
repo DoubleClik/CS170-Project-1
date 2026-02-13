@@ -1,5 +1,8 @@
 import heapq
 import time
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # ----- Helper Functions -----
 def printLargeGap():
@@ -37,7 +40,11 @@ def printGrid(state, barLength, n, longestNumLen):
     printBar(barLength)
 
 def displayState(state):
-    longestNumLen = len(str(state[0][0]))
+    for row in state:
+        for value in row:
+            if value > largest:
+                largest = value
+    longestNumLen = len(str(largest))
     n = len(state)
     barLength = (n+1) + (longestNumLen*n)
 
@@ -61,6 +68,75 @@ def generateGoalState(n):
         goal.append(tuple(row))
 
     return tuple(goal)
+
+# CREDIT: https://www.geeksforgeeks.org/dsa/check-instance-8-puzzle-solvable/
+    # For the idea to count inversions to prove/disprove solvability
+    # And this really good statement: "It is not possible to solve an instance of 8 puzzle if number of inversions is odd in the input state."
+    # My implementation of isSolvable is a heavily modified version of geeksforgeeks'. (Used geeksforgeeks' isSolvable function as a starting point,
+    # after which I modified it to work for any n by n sized puzzle state)
+def isSolvable(n, state):
+    flatList = []
+    blankRowIndex = 0
+
+    # Flatten state into a list (ignore 0)
+    for rowIndex in range(n):
+        for colIndex in range(n):
+            value = state[rowIndex][colIndex]
+            if value == 0:
+                blankRowIndex = rowIndex
+            else:
+                flatList.append(value)
+
+    # Count inversions
+    inversionCount = 0
+    for firstIndex in range(len(flatList)):
+        for secondIndex in range(firstIndex + 1, len(flatList)):
+            if flatList[firstIndex] > flatList[secondIndex]:
+                inversionCount += 1
+
+    # Row counting from bottom (1-based)
+    blankRowFromBottom = n - blankRowIndex
+
+    if n % 2 == 1:
+        return inversionCount % 2 == 0
+    else:
+        return (inversionCount + blankRowFromBottom) % 2 == 1
+
+
+def validateInitialState(n, initState):
+
+    # Check dimensions
+    if len(initState) != n:
+        print("Invalid: Incorrect number of rows.")
+        return False
+
+    for row in initState:
+        if len(row) != n:
+            print("Invalid: Incorrect number of columns.")
+            return False
+
+    flatList = []
+    for rowIndex in range(n):
+        for colIndex in range(n):
+            value = initState[rowIndex][colIndex]
+
+            if not isinstance(value, int):
+                print("Invalid: All entries must be integers.")
+                return False
+
+            flatList.append(value)
+
+    validValues = set(range(n * n))
+
+    if set(flatList) != validValues:
+        print("Invalid: Must contain all values from 0 to", n*n - 1, "exactly once.")
+        return False
+
+    if not isSolvable(n, initState):
+        print("Invalid: Puzzle is not solvable.")
+        return False
+
+    return True
 
 # Returns hashable key for states already visited
 # NOTE: State is stored as tuple-of-tuples
@@ -256,9 +332,7 @@ def reconstructPath(goalNode):
     return list(reversed(path))
 
 # ----- User Prompter -----
-
-
-def promptUser():
+def promptUser(): 
     n = input("Enter Puzzle Dimensions [n by n]. n: ")
 
     n = int(n)
@@ -268,41 +342,38 @@ def promptUser():
 
     for rowIndex in range(0,n):
         for colIndex in range(0,n):
-                printGrid(arr, barLength, n, longestNumLen)
-                value = input(f'Enter Value for Row {rowIndex+1}, Column {colIndex+1}: ')
-                arr[rowIndex][colIndex] = int(value)
-                printLargeGap()
-    
+            printGrid(arr, barLength, n, longestNumLen)
+            value = input(f'Enter Value for Row {rowIndex+1}, Column {colIndex+1}: ')
+            arr[rowIndex][colIndex] = int(value)
+            printLargeGap()
+
     initArr = tuple(tuple(row) for row in arr)
+    if not validateInitialState(n, initArr):
+        raise ValueError("Invalid initial state entered, please try again.")
+    
+    heuristicType = int(input("Which heuristic would you like to use: Misplaced Tile [0], Manhattan Distance [1], or None [2]: "))
     goalArr = generateGoalState(n)
 
-    return initArr, goalArr
+    return initArr, goalArr, heuristicType
 
-#FIXME: promptUser() input validation, innitArr input validation, improve code readibility, write report, check code and report at office hours
+#FIXME: promptUser() input validation and more user-friendly inputting, improve code readibility, generate figures, write report, add download instructions to README, check code and report at office hours
+#FIXME: add to README.md how to install py, pip, seaborn, matplotlib, pandas
 # ----- Main -----
 if __name__ == '__main__':
-
-    initArr, goalArr = promptUser()
+    initArr, goalArr, heuristicType = promptUser()
   
     problem = Problem(initArr, goalArr)
 
     start = time.time()
-    
-    # 1) Uniform Cost Search
-    # goalNode = general_search(problem, heuristicType=-1)
 
-    # 2) A* Misplaced
-    # goalNode = general_search(problem, heuristicType=0)
-
-    # 3) A* Manhattan
-    goalNode = general_search(problem, heuristicType=1)
-
+    # A* Misplaced Tile [0], A* Manhattan Distance [1], or Uniform Cost Search or No Heustic [2]
+    goalNode = general_search(problem, heuristicType)
     # Calculate the end time and time taken
     end = time.time()
     length = end - start
 
     if goalNode is None:
-        print("failure")
+        print("Inputted Puzzle Arrangement is Invalid")
     else:
         path = reconstructPath(goalNode)
         i = 0
@@ -311,6 +382,6 @@ if __name__ == '__main__':
             displayState(s)
             print(f'Depth: {i}')
             i+=1
-            time.sleep(.5)
+            time.sleep(.25)
 
-    print("Search took", length * 1000, "ms")
+    print("Search took", round(length * 1000, 2), "ms")
