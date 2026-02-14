@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 
 # ----- Helper Functions -----
 def printLargeGap():
-    for _ in range(50):
-        print()
+    # for _ in range(50):
+    #     print()
+    output = ""
 
 def printBar(barLength):
     output = ""
@@ -40,10 +41,13 @@ def printGrid(state, barLength, n, longestNumLen):
     printBar(barLength)
 
 def displayState(state):
+    # Find largest number for formatting width
+    largest = 0
     for row in state:
         for value in row:
             if value > largest:
                 largest = value
+
     longestNumLen = len(str(largest))
     n = len(state)
     barLength = (n+1) + (longestNumLen*n)
@@ -299,24 +303,28 @@ def general_search(problem, heuristicType):
     nodes, tieCounter = MAKE_QUEUE(root)
 
     visited = set()  # avoid re-expanding previously explored states
+    nodesExpanded = 0
 
     # loop do
     while True:
         # if EMPTY(nodes) then return "failure"
         if EMPTY(nodes):
-            return None
+            return None, nodesExpanded
         
         # node = REMOVE-FRONT(nodes)
         node = REMOVE_FRONT(nodes)
 
         # if problem.GOAL-TEST(node.STATE) succeeds then return node
         if problem.GOAL_TEST(node.state):
-            return node
+            return node, nodesExpanded
 
         k = stateKey(node.state)
         if k in visited:
             continue
         visited.add(k)
+
+        # This node is being expanded now
+        nodesExpanded += 1
 
         # nodes = QUEUEING-FUNCTION(nodes, EXPAND(node, problem.OPERATORS))
         children = node.generateChildren()
@@ -327,9 +335,10 @@ def reconstructPath(goalNode):
     path = []
     currentNode = goalNode
     while currentNode is not None:
-        path.append(currentNode.state)
+        path.append(currentNode)   # store the node itself
         currentNode = currentNode.parent
     return list(reversed(path))
+
 
 # ----- User Prompter -----
 def promptUser(): 
@@ -346,6 +355,7 @@ def promptUser():
             value = input(f'Enter Value for Row {rowIndex+1}, Column {colIndex+1}: ')
             arr[rowIndex][colIndex] = int(value)
             printLargeGap()
+    printGrid(arr, barLength, n, longestNumLen)
 
     initArr = tuple(tuple(row) for row in arr)
     if not validateInitialState(n, initArr):
@@ -356,32 +366,169 @@ def promptUser():
 
     return initArr, goalArr, heuristicType
 
-#FIXME: promptUser() input validation and more user-friendly inputting, improve code readibility, generate figures, write report, add download instructions to README, check code and report at office hours
-#FIXME: add to README.md how to install py, pip, seaborn, matplotlib, pandas
+# ----- Run Test Cases -----
+def buildRuntimeVsDepthData():
+    # Goal state (standard 3 by 3)
+    goalArr = (
+        (1, 2, 3),
+        (4, 5, 6),
+        (7, 8, 0)
+    )
+
+    # Test cases taken from instructions
+    testCases = [
+        (0,  ((1, 2, 3),
+              (4, 5, 6),
+              (7, 8, 0))),
+
+        (2,  ((1, 2, 3),
+              (4, 5, 6),
+              (0, 7, 8))),
+
+        (4,  ((1, 2, 3),
+              (5, 0, 6),
+              (4, 7, 8))),
+
+        (8,  ((1, 3, 6),
+              (5, 0, 2),
+              (4, 7, 8))),
+
+        (12, ((1, 3, 6),
+              (5, 0, 7),
+              (4, 8, 2))),
+
+        (16, ((1, 6, 7),
+              (5, 0, 3),
+              (4, 8, 2))),
+
+        (20, ((7, 1, 2),
+              (4, 8, 5),
+              (6, 3, 0))),
+
+        (24, ((0, 7, 2),
+              (4, 6, 1),
+              (3, 5, 8))),
+    ]
+
+    algorithmConfigs = [
+        ("UCS", -1),
+        ("A* Misplaced", 0),
+        ("A* Manhattan", 1),
+    ]
+
+    rows = []
+
+    for (knownDepth, initArr) in testCases:
+        problem = Problem(initArr, goalArr)
+
+        for (algorithmName, heuristicType) in algorithmConfigs:
+            start = time.perf_counter()
+            goalNode, nodesExpanded = general_search(problem, heuristicType)
+            end = time.perf_counter()
+
+            runtimeMs = (end - start) * 1000.0
+
+            # If something goes wrong, don't crash the whole experiment
+            if goalNode is None:
+                rows.append({
+                    "solutionDepth": knownDepth,
+                    "runtimeMs": runtimeMs,
+                    "nodesExpanded": nodesExpanded,
+                    "algorithm": algorithmName,
+                    "solved": False
+                })
+            else:
+                rows.append({
+                    "solutionDepth": knownDepth,
+                    "runtimeMs": runtimeMs,
+                    "nodesExpanded": nodesExpanded,
+                    "algorithm": algorithmName,
+                    "solved": True
+                })
+
+    return pd.DataFrame(rows)
+
 # ----- Main -----
 if __name__ == '__main__':
-    initArr, goalArr, heuristicType = promptUser()
+    choice = int(input("Would you like to [0] Solve a Puzzle or [1] Generate Test Figures: "))
+    if choice == 0:
+        initArr, goalArr, heuristicType = promptUser()
   
-    problem = Problem(initArr, goalArr)
+        problem = Problem(initArr, goalArr)
 
-    start = time.time()
+        start = time.time()
 
-    # A* Misplaced Tile [0], A* Manhattan Distance [1], or Uniform Cost Search or No Heustic [2]
-    goalNode = general_search(problem, heuristicType)
-    # Calculate the end time and time taken
-    end = time.time()
-    length = end - start
+        # A* Misplaced Tile [0], A* Manhattan Distance [1], or Uniform Cost Search or No Heustic [2]
+        goalNode, nodesExpanded = general_search(problem, heuristicType)
+        # Calculate the end time and time taken
+        end = time.time()
+        length = end - start
 
-    if goalNode is None:
-        print("Inputted Puzzle Arrangement is Invalid")
+        if goalNode is None:
+            print("Inputted Puzzle Arrangement is Invalid")
+        else:
+            path = reconstructPath(goalNode)
+            for node in path:
+                printLargeGap()
+                displayState(node.state)
+
+                # g(n) is depth, h(n) is the heuristic value stored on the node
+                print(f"g(n) = {node.depth} | h(n) = {node.hn} | f(n) = {node.fn}")
+
+                time.sleep(.25)
+
+        print("Nodes Expanded:", nodesExpanded)
+        print("Search took", round(length * 1000, 2), "ms")
+    elif choice == 1:
+        df = buildRuntimeVsDepthData()
+
+        # Optional: filter out failures if any
+        df = df[df["solved"] == True]
+
+        # ----- Table 1: Runtime vs Solution Depth -----
+        runtimeTable = (
+            df.pivot_table(
+                index="solutionDepth",
+                columns="algorithm",
+                values="runtimeMs",
+                aggfunc="mean"
+            )
+            .sort_index()
+            .round(3)
+        )
+
+        print("\n----- Runtime (ms) vs Solution Depth -----")
+        print(runtimeTable.to_string())
+
+        # ----- Table 2: Nodes Expanded vs Solution Depth -----
+        nodesExpandedTable = (
+            df.pivot_table(
+                index="solutionDepth",
+                columns="algorithm",
+                values="nodesExpanded",
+                aggfunc="mean"
+            )
+            .sort_index()
+        )
+
+        print("\n----- Nodes Expanded vs Solution Depth -----")
+        print(nodesExpandedTable.to_string())
+
+        # ----- Figure 1: Runtime vs Solution Depth -----
+        plt.figure()
+        sns.lineplot(data=df, x="solutionDepth", y="runtimeMs", hue="algorithm", marker="o")
+        plt.xlabel("Solution Depth")
+        plt.ylabel("Runtime (ms)")
+        plt.title("Runtime vs Solution Depth (8-Puzzle)")
+        plt.show()
+
+        # ----- Figure 2: Nodes Expanded vs Solution Depth -----
+        plt.figure()
+        sns.lineplot(data=df, x="solutionDepth", y="nodesExpanded", hue="algorithm", marker="o")
+        plt.xlabel("Solution Depth")
+        plt.ylabel("Nodes Expanded")
+        plt.title("Nodes Expanded vs Solution Depth (8-Puzzle)")
+        plt.show()
+
     else:
-        path = reconstructPath(goalNode)
-        i = 0
-        for s in path:
-            printLargeGap()
-            displayState(s)
-            print(f'Depth: {i}')
-            i+=1
-            time.sleep(.25)
-
-    print("Search took", round(length * 1000, 2), "ms")
+        print("Sorry, that choice was invalid.")
