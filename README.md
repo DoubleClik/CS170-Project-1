@@ -22,11 +22,9 @@ https://www.python.org/downloads/
 ## 2. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-cd YOUR_REPO_NAME
+git clone https://github.com/DoubleClik/CS170-Project-1.git
+cd CS170-Project-1
 ```
-
-(Replace with your actual repository URL.)
 
 ---
 
